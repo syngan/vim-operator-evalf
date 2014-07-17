@@ -1,6 +1,8 @@
 vim-operator-inserttext
 =======================
 
+[![Build Status](https://travis-ci.org/syngan/vim-operator-inserttext.svg?branch=master)](https://travis-ci.org/syngan/vim-operator-inserttext)
+
 関数の出力結果を挿入するオペレータです。
 
 - Requires:  ![vim-operator-user](https://github.com/kana/vim-operator-user)
