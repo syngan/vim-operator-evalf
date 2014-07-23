@@ -51,11 +51,7 @@ function! s:funcs.block.gettext(reg) " {{{
 endfunction " }}}
 
 function! s:funcs.line.paste(str, pos, reg) " {{{
-  if a:str =~# "\n$" || a:str == ""
-    call setreg(a:reg, a:str, 'V')
-  else
-    call setreg(a:reg, a:str . "\n", 'V')
-  endif
+  call setreg(a:reg, a:str, 'V')
   if a:pos < 0
     call s:knormal('`[P')
   elseif a:pos > 0
@@ -69,14 +65,11 @@ function! s:funcs.line.paste(str, pos, reg) " {{{
 endfunction " }}}
 
 function! s:funcs.char.paste(str, pos, reg) " {{{
-  call setreg(a:reg, a:str, 'V')
+  call setreg(a:reg, a:str, 'v')
   if a:pos < 0
     call s:knormal('`[P')
   elseif a:pos > 0
     call s:knormal('`]p')
-  elseif getpos("'[")[1] == 1 && getpos("']")[1] == line("$")
-    " 全削除
-    call s:knormal('`[v`]"_dPG"_ddggVG"' . a:reg . 'y')
   else
     call s:knormal('`[v`]"_dP')
   endif
