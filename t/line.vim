@@ -1,5 +1,4 @@
 filetype plugin on
-runtime! plugin/operator/furround.vim
 
 let g:str1 = "koko ha tako desu ka."
 let g:str2 = "koreha line 2"
