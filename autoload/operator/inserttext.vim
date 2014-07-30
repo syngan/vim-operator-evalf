@@ -3,8 +3,12 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
+function! s:log(str) " {{{
+  silent! call vimconsole#log(a:str)
+endfunction " }}}
+
 function! operator#inserttext#mapexpr(func, pos) " {{{
-  let s:func = a:func
+  let s:__func__ = a:func
   if a:pos > 0
     return "\<Plug>(operator-inserttext-after)"
   elseif a:pos < 0
@@ -53,27 +57,46 @@ endfunction " }}}
 function! s:funcs.line.paste(str, pos, reg) " {{{
   call setreg(a:reg, a:str, 'V')
   if a:pos < 0
-    call s:knormal('`[P')
+    call s:knormal('`["' . a:reg . 'P')
   elseif a:pos > 0
-    call s:knormal('`]p')
+    call s:knormal('`]"' . a:reg . 'p')
   elseif getpos("'[")[1] == 1 && getpos("']")[1] == line("$")
-    " 全削除
-    call s:knormal('`[V`]"_dPG"_ddggVG"' . a:reg . 'y')
+    " vanish
+    call s:knormal('`[V`]"_d"' . a:reg . 'PG"_ddggVG"' . a:reg . 'y')
   else
-    call s:knormal('`[V`]"_dP')
+    call s:knormal('`[V`]"_d"' . a:reg . 'p')
   endif
 endfunction " }}}
 
 function! s:funcs.char.paste(str, pos, reg) " {{{
   call setreg(a:reg, a:str, 'v')
   if a:pos < 0
-    call s:knormal('`[P')
+    call s:knormal('`["' . a:reg . 'P')
   elseif a:pos > 0
-    call s:knormal('`]p')
+    call s:knormal('`]"' . a:reg . 'p')
   else
-    call s:knormal('`[v`]"_dP')
+    call s:knormal('`[v`]"_d"' . a:reg . 'P')
   endif
 endfunction " }}}
+
+function! s:funcs.block.paste(str, pos, reg) " {{{
+  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
+  if a:pos != 0
+    let str = repeat(' ', p[0][2]-1) . a:str
+    call setreg(a:reg, str, 'V')
+    if a:pos < 0
+      call s:knormal('`["' . a:reg . 'P')
+    else
+      call s:knormal('`]"' . a:reg . 'p')
+    endif
+    return
+  else
+    " 最終行を置き換える
+    call setpos(".", [p[0][0], p[1][1], p[0][2], p[0][3]])
+    call s:knormal('R' . a:str)
+  endif
+endfunction " }}}
+
 
 function! s:do(motion, pos) " {{{
 
@@ -86,8 +109,10 @@ function! s:do(motion, pos) " {{{
 
   try
     let src = fdic.gettext(reg)
-    let str = s:func(src)
-    call fdic.paste(str, a:pos, reg)
+    let str = s:__func__(src, a:motion)
+    if str != ''
+      call fdic.paste(str, a:pos, reg)
+    endif
   finally
     for r in [reg, '"']
       call setreg(r, regdic[r][0], regdic[r][1])
@@ -98,4 +123,4 @@ endfunction " }}}
 let &cpo = s:save_cpo
 unlet s:save_cpo
 
-" vim:set et ts=2 sts=2 sw=2 tw=0 fdm=marker:
+" vim:set et ts=2 sts=2 sw=2 tw=0:
