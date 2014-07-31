@@ -17,7 +17,7 @@ function! s:paste_code()
   1 delete _
 endfunction
 
-function! g:P1(str)
+function! g:P1(str, ...)
   return len(a:str) . g:pst1
 endfunction
 

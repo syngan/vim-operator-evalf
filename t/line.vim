@@ -18,11 +18,11 @@ function! s:paste_code()
   1 delete _
 endfunction
 
-function! g:P1(str)
+function! g:P1(str, ...)
   return len(a:str) . g:pst1 . "\n" . g:pst2 . "\n"
 endfunction
 
-function! g:P2(str)
+function! g:P2(str, ...)
   return len(a:str) . g:pst1 . "\n" . g:pst2
 endfunction
 
