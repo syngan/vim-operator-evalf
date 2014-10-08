@@ -97,13 +97,12 @@ function! s:funcs.block.paste(str, pos, reg) " {{{
   endif
 endfunction " }}}
 
-
 function! s:do(motion, pos) " {{{
 
   let fdic = s:funcs[a:motion]
-  let reg = 'f'
+  let reg = '"'
   let regdic = {}
-  for r in [reg, '"']
+  for r in [reg]
     let regdic[r] = [getreg(r), getregtype(r)]
   endfor
 
@@ -114,7 +113,7 @@ function! s:do(motion, pos) " {{{
       call fdic.paste(string(str), a:pos, reg)
     endif
   finally
-    for r in [reg, '"']
+    for r in [reg]
       call setreg(r, regdic[r][0], regdic[r][1])
     endfor
   endtry
