@@ -75,7 +75,7 @@ function! s:funcs.char.paste(str, pos, reg) " {{{
   elseif a:pos > 0
     call s:knormal('`]"' . a:reg . 'p')
   else
-    call s:knormal('`[v`]"_d"' . a:reg . 'P')
+    call s:knormal('`[v`]"' . a:reg . 'P')
   endif
 endfunction " }}}
 
