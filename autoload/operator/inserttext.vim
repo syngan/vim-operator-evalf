@@ -110,7 +110,7 @@ function! s:do(motion, pos) " {{{
     let src = fdic.gettext(reg)
     let str = s:__func__(src, a:motion)
     if str != ''
-      call fdic.paste(string(str), a:pos, reg)
+      call fdic.paste(str, a:pos, reg)
     endif
   finally
     for r in [reg]
