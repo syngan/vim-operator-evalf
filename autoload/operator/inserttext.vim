@@ -7,6 +7,142 @@ function! s:log(str) " {{{
   silent! call vimconsole#log(a:str)
 endfunction " }}}
 
+function! s:system(cmd) " {{{
+  " @TODO vimproc
+  let cmd = substitute(a:cmd, "\n", '', 'g')
+  let val = system(cmd)
+  let err = v:shell_error
+  return [val, err]
+endfunction " }}}
+
+function! operator#inserttext#system(cmd) " {{{
+  let [val, err] = s:system(a:cmd)
+  if err
+    return ''
+  else
+    return val
+  endif
+endfunction " }}}
+
+function! s:echo(msg) " {{{
+  redraw | echo 'inserttext: ' . a:msg
+endfunction " }}}
+
+function! s:is_valid_config() " {{{
+  return exists('g:operator#inserttext#config') &&
+\   type(g:operator#inserttext#config) == type({})
+endfunction " }}}
+
+function! s:get(config, key) " {{{
+  let c = a:config
+  if has_key(c, a:key)
+    if !type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
+\     type(c[a:key].func) != type(function('tr'))
+      call s:echo('invalid config[' + a:key + ']')
+      return [0, 0]
+    endif
+    return [c[a:key], get(c[a:key], 'pos', 0)]
+  endif
+
+  for x in [[0,1,-1], [-1,0,-2]]
+    if a:key[x[0]] == '+' || a:key[x[0]] == '-'
+      if has_key(c, a:key[x[1] : x[2]])
+        return [c[a:key[x[1] : x[2]]], a:key[x[0]]=='+' ? 1 : -1]
+      endif
+    endif
+  endfor
+
+  return [-1, 0]
+endfunction " }}}
+
+function! operator#inserttext#complete(...) " {{{
+  return keys(g:operator#inserttext#config)
+endfunction " }}}
+
+function! s:input(...) " {{{
+  return input('inserttext: ', '', 'custom,operator#inserttext#complete')
+endfunction " }}}
+
+function! s:exists(f) " {{{
+  try
+    call a:f()
+    return 1
+  catch /E117.*/
+    return 0
+  catch /E119.*/
+    return 1
+  endtry
+endfunction " }}}
+
+function! operator#inserttext#quickrun(str, ...) " {{{
+  let f = tempname()
+  call writefile(split(a:str, '\n'), f)
+  call quickrun#run({
+        \ 'outputter': 'variable',
+        \ 'srcfile': f,
+        \ 'outputter/variable/name': 'g:operator#inserttext#quickrun_ret',
+        \ 'type': s:__func__quickrun,
+        \ 'runner': 'system'
+        \ })
+  " 任意の runner で同期処理にする方法がよくわからない.
+  " ローカル変数は利用できるんか?
+  call delete(f)
+  let ret = get(g:, "operator#inserttext#quickrun_ret", '')
+  unlet! g:operator#inserttext#quickrun_ret
+
+  return ret
+endfunction " }}}
+
+function! operator#inserttext#do(motion) " {{{
+  let str = s:input(a:motion)
+  if str == ''
+    call s:echo('canceled')
+    return
+  endif
+
+  if s:is_valid_config()
+    let [c, p] = s:get(str, g:operator#inserttext#config)
+    if c == 0
+      return
+    elseif c != -1
+      let s:__func__ = c.func
+      return s:do(a:motion, p)
+    endif
+  endif
+
+  for x in [[1,-1,0],[0,-2,-1],[0,-1]]
+    if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
+      continue
+    endif
+    let F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
+    if s:exists(F)
+      let s:__func__ = F
+      if len(x) == 2
+        return s:do(a:motion, 0)
+      else
+        return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
+      endif
+    endif
+  endfor
+
+  for x in [[1,-1,0],[0,-2,-1],[0,-1]]
+    if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
+      continue
+    endif
+    let s:__func__ = function('operator#inserttext#quickrun')
+    if len(x) == 2
+      let s:__func__quickrun = str
+      return s:do(a:motion, 0)
+    else
+      let s:__func__quickrun = str[x[0] : x[1]]
+      return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
+    endif
+  endfor
+
+  " call s:echo('undefined: config[' + str + ']')
+  " return
+endfunction " }}}
+
 function! operator#inserttext#mapexpr(func, pos) " {{{
   let s:__func__ = a:func
   if a:pos > 0
