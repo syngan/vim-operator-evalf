@@ -69,17 +69,6 @@ function! s:input(...) " {{{
   return input('inserttext: ', '', 'custom,operator#inserttext#complete')
 endfunction " }}}
 
-function! s:exists(f) " {{{
-  try
-    call a:f()
-    return 1
-  catch /E117.*/
-    return 0
-  catch /E119.*/
-    return 1
-  endtry
-endfunction " }}}
-
 function! operator#inserttext#quickrun(str, ...) " {{{
   let f = tempname()
   call writefile(split(a:str, '\n'), f)
@@ -128,14 +117,16 @@ function! operator#inserttext#do(motion) " {{{
       continue
     endif
     let F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
-    if s:exists(F)
+    try
       let s:__func__ = F
       if len(x) == 2
         return s:do(a:motion, 0)
       else
         return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
       endif
-    endif
+    catch /E117.*/
+      break
+    endtry
   endfor " }}}
 
   " do quickrun {{{
