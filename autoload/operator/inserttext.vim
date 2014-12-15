@@ -123,7 +123,7 @@ function! operator#inserttext#do(motion) " {{{
 
   " operator-inserttext functions {{{
   "------------------------------------------------
-  for x in [[1,-1,0],[0,-2,-1],[0,-1]]
+  for x in [[1,-1,0],[0,-2,len(str)-1],[0,-1]]
     if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
       continue
     endif
@@ -140,7 +140,7 @@ function! operator#inserttext#do(motion) " {{{
 
   " do quickrun {{{
   "------------------------------------------------
-  for x in [[1,-1,0],[0,-2,-1],[0,-1]]
+  for x in [[1,-1,0],[0,-2,len(str)-1],[0,-1]]
     if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
       continue
     endif
