@@ -28,6 +28,12 @@ function! s:echo(msg) " {{{
   redraw | echo 'inserttext: ' . a:msg
 endfunction " }}}
 
+function! s:echoerr(msg) " {{{
+  echohl ErrorMsg
+  echomsg 'inserttext: ' . a:msg
+  echohl None
+endfunction " }}}
+
 function! s:is_valid_config() " {{{
   return exists('g:operator#inserttext#config') &&
 \   type(g:operator#inserttext#config) == type({})
@@ -89,6 +95,9 @@ function! operator#inserttext#quickrun(str, ...) " {{{
   call delete(f)
   let ret = get(g:, "operator#inserttext#quickrun_ret", '')
   unlet! g:operator#inserttext#quickrun_ret
+  if ret ==# s:__func__quickrun + ': Command not found.'
+    throw 'E117'
+  endif
 
   return ret
 endfunction " }}}
@@ -100,6 +109,8 @@ function! operator#inserttext#do(motion) " {{{
     return
   endif
 
+  " user definition {{{
+  "------------------------------------------------
   if s:is_valid_config()
     let [c, p] = s:get(str, g:operator#inserttext#config)
     if c == 0
@@ -108,8 +119,10 @@ function! operator#inserttext#do(motion) " {{{
       let s:__func__ = c.func
       return s:do(a:motion, p)
     endif
-  endif
+  endif " }}}
 
+  " operator-inserttext functions {{{
+  "------------------------------------------------
   for x in [[1,-1,0],[0,-2,-1],[0,-1]]
     if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
       continue
@@ -123,24 +136,31 @@ function! operator#inserttext#do(motion) " {{{
         return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
       endif
     endif
-  endfor
+  endfor " }}}
 
+  " do quickrun {{{
+  "------------------------------------------------
   for x in [[1,-1,0],[0,-2,-1],[0,-1]]
     if len(x) > 2 && str[x[2]] != '+' && str[x[2]] != '-'
       continue
     endif
     let s:__func__ = function('operator#inserttext#quickrun')
-    if len(x) == 2
-      let s:__func__quickrun = str
-      return s:do(a:motion, 0)
-    else
-      let s:__func__quickrun = str[x[0] : x[1]]
-      return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
-    endif
-  endfor
+    try
+      if len(x) == 2
+        let s:__func__quickrun = str
+        return s:do(a:motion, 0)
+      else
+        let s:__func__quickrun = str[x[0] : x[1]]
+        return s:do(a:motion, str[x[2]] == '+' ? 1 : -1)
+      endif
+    catch /E117.*/
+      break
+    endtry
+  endfor " }}}
 
   " call s:echo('undefined: config[' + str + ']')
   " return
+  call s:echoerr('not found: ' . str)
 endfunction " }}}
 
 function! operator#inserttext#mapexpr(func, pos) " {{{
