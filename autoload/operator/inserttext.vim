@@ -44,7 +44,7 @@ function! s:get(config, key) " {{{
   if has_key(c, a:key)
     if !type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
 \     type(c[a:key].func) != type(function('tr'))
-      call s:echo('invalid config[' + a:key + ']')
+      call s:echo('invalid config[' . a:key . ']')
       return [0, 0]
     endif
     return [c[a:key], get(c[a:key], 'pos', 0)]
@@ -84,10 +84,9 @@ function! operator#inserttext#quickrun(str, ...) " {{{
   call delete(f)
   let ret = get(g:, "operator#inserttext#quickrun_ret", '')
   unlet! g:operator#inserttext#quickrun_ret
-  if ret ==# s:__func__quickrun + ': Command not found.'
+  if ret ==# s:__func__quickrun . ': Command not found.'
     throw 'E117'
   endif
-
   return ret
 endfunction " }}}
 
