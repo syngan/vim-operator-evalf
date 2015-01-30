@@ -66,7 +66,7 @@ function! operator#inserttext#complete(...) abort " {{{
 endfunction " }}}
 
 function! s:input(...) abort " {{{
-  return input('inserttext: ', '', 'custom,operator#inserttext#complete')
+  return input('inserttext: ', '', 'customlist,operator#inserttext#complete')
 endfunction " }}}
 
 function! operator#inserttext#quickrun(str, ...) abort " {{{
