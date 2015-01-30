@@ -42,7 +42,7 @@ endfunction " }}}
 function! s:get(config, key) abort " {{{
   let c = a:config
   if has_key(c, a:key)
-    if !type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
+    if type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
 \     type(c[a:key].func) != type(function('tr'))
       call s:echo('invalid config[' . a:key . ']')
       return [0, 0]
@@ -50,7 +50,7 @@ function! s:get(config, key) abort " {{{
     return [c[a:key], get(c[a:key], 'pos', 0)]
   endif
 
-  for x in [[0,1,-1], [-1,0,-2]]
+  for x in [[0,1,-1], [len(a:key)-1,0,-2]]
     if a:key[x[0]] ==# '+' || a:key[x[0]] ==# '-'
       if has_key(c, a:key[x[1] : x[2]])
         return [c[a:key[x[1] : x[2]]], a:key[x[0]]==#'+' ? 1 : -1]
@@ -100,10 +100,10 @@ function! operator#inserttext#do(motion) abort " {{{
   " user definition {{{
   "------------------------------------------------
   if s:is_valid_config()
-    let [c, p] = s:get(str, g:operator#inserttext#config)
-    if c == 0
+    let [c, p] = s:get(g:operator#inserttext#config, str)
+    if c is 0
       return
-    elseif c != -1
+    elseif c isnot -1
       let s:__func__ = c.func
       return s:do(a:motion, p)
     endif
