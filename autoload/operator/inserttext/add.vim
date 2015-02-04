@@ -12,7 +12,6 @@ function! operator#inserttext#add#eval(str, ...)
       return string(ret)
     endif
     let val = matchstr(s, pat, idx)
-    echo val
     let ret += str2float(val)
 
     let idx += len(val)
