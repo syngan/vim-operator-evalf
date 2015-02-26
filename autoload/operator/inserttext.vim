@@ -40,6 +40,7 @@ function! s:is_valid_config() abort " {{{
 endfunction " }}}
 
 function! s:get(config, key) abort " {{{
+  " return conf + pos
   let c = a:config
   if has_key(c, a:key)
     if type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
@@ -69,7 +70,7 @@ function! s:input(...) abort " {{{
   return input('inserttext: ', '', 'customlist,operator#inserttext#complete')
 endfunction " }}}
 
-function! operator#inserttext#quickrun(str, ...) abort " {{{
+function! s:quickrun(str, ...) abort " {{{
   let f = tempname()
   call writefile(split(a:str, '\n'), f)
   call quickrun#run({
@@ -102,10 +103,11 @@ function! operator#inserttext#do(motion) abort " {{{
   if s:is_valid_config()
     let [c, p] = s:get(g:operator#inserttext#config, str)
     if c is 0
+      call s:echo('invalid config')
       return
     elseif c isnot -1
       let s:__func__ = c.func
-      return s:do(a:motion, p)
+      return s:do(a:motion, p, c)
     endif
   endif " }}}
 
@@ -134,7 +136,7 @@ function! operator#inserttext#do(motion) abort " {{{
     if len(x) > 2 && str[x[2]] !=# '+' && str[x[2]] !=# '-'
       continue
     endif
-    let s:__func__ = function('operator#inserttext#quickrun')
+    let s:__func__ = function('s:quickrun')
     try
       if len(x) == 2
         let s:__func__quickrun = str
@@ -243,7 +245,7 @@ function! s:funcs.block.paste(str, pos, reg) abort " {{{
   endif
 endfunction " }}}
 
-function! s:do(motion, pos) abort " {{{
+function! s:do(motion, pos, ...) abort " {{{
 
   let fdic = s:funcs[a:motion]
   let reg = '"'
@@ -254,7 +256,11 @@ function! s:do(motion, pos) abort " {{{
 
   try
     let src = fdic.gettext(reg)
-    let str = s:__func__(src, a:motion)
+    if a:0 == 0
+      let str = s:__func__(src, a:motion)
+    else
+      let str = s:__func__(src, a:motion, a:1)
+    endif
     if str !=# ''
       call fdic.paste(str, a:pos, reg)
     endif
