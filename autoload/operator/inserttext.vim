@@ -4,6 +4,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 let s:postbl = {
+\ '!': 'echo',
 \ '+': 'paste_after',
 \  1 : 'paste_after',
 \ '-': 'paste_before',
@@ -195,6 +196,12 @@ function! s:knormal(s) abort " {{{
 endfunction " }}}
 
 let s:funcs = {'char' : {}, 'line': {}, 'block': {}}
+function! s:funcs.char.echo(str, ...) abort " {{{
+  echo a:str
+endfunction " }}}
+let s:funcs.line.echo = s:funcs.char.echo
+let s:funcs.block.echo = s:funcs.char.echo
+
 function! s:funcs.char.gettext(reg) abort " {{{
   call s:knormal(printf('`[v`]"%sy', a:reg))
   return getreg(a:reg)
