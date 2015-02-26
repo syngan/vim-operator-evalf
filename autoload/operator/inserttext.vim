@@ -3,6 +3,14 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
+let s:postbl = {
+\ '+': 'paste_after',
+\  1 : 'paste_after',
+\ '-': 'paste_before',
+\ -1 : 'paste_before',
+\ '0': 'paste_replace',
+\}
+
 function! s:log(str) abort " {{{
   silent! call vimconsole#log(a:str)
 endfunction " }}}
@@ -48,13 +56,13 @@ function! s:get(config, key) abort " {{{
       call s:echo('invalid config[' . a:key . ']')
       return [0, 0]
     endif
-    return [c[a:key], get(c[a:key], 'pos', 0)]
+    return [c[a:key], s:postbl[get(c[a:key], 'pos', 0)]]
   endif
 
   for x in [[0,1,-1], [len(a:key)-1,0,-2]]
-    if a:key[x[0]] ==# '+' || a:key[x[0]] ==# '-'
+    if has_key(s:postbl, a:key[x[0]])
       if has_key(c, a:key[x[1] : x[2]])
-        return [c[a:key[x[1] : x[2]]], a:key[x[0]]==#'+' ? 1 : -1]
+        return [c[a:key[x[1] : x[2]]], s:postbl[a:key[x[0]]]]
       endif
     endif
   endfor
@@ -114,16 +122,16 @@ function! operator#inserttext#do(motion) abort " {{{
   " operator-inserttext functions {{{
   "------------------------------------------------
   for x in [[1,-1,0],[0,-2,len(str)-1],[0,-1]]
-    if len(x) > 2 && str[x[2]] !=# '+' && str[x[2]] !=# '-'
+    if len(x) > 2 && !has_key(s:postbl, str[x[2]])
       continue
     endif
     let F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
     try
       let s:__func__ = F
       if len(x) == 2
-        return s:do(a:motion, 0)
+        return s:do(a:motion, s:postbl[0])
       else
-        return s:do(a:motion, str[x[2]] ==# '+' ? 1 : -1)
+        return s:do(a:motion, s:postbl[str[x[2]]])
       endif
     catch /E117.*/
       break
@@ -133,17 +141,17 @@ function! operator#inserttext#do(motion) abort " {{{
   " do quickrun {{{
   "------------------------------------------------
   for x in [[1,-1,0],[0,-2,len(str)-1],[0,-1]]
-    if len(x) > 2 && str[x[2]] !=# '+' && str[x[2]] !=# '-'
+    if len(x) > 2 && !has_key(s:postbl, str[x[2]])
       continue
     endif
     let s:__func__ = function('s:quickrun')
     try
       if len(x) == 2
         let s:__func__quickrun = str
-        return s:do(a:motion, 0)
+        return s:do(a:motion, s:postbl[0])
       else
         let s:__func__quickrun = str[x[0] : x[1]]
-        return s:do(a:motion, str[x[2]] ==# '+' ? 1 : -1)
+        return s:do(a:motion, s:postbl[str[x[2]]])
       endif
     catch /E117.*/
       break
@@ -171,15 +179,15 @@ call operator#user#define('inserttext-after',   'operator#inserttext#do_after')
 call operator#user#define('inserttext-replace', 'operator#inserttext#do_replace')
 
 function! operator#inserttext#do_after(motion) abort " {{{
-  return s:do(a:motion, 1)
+  return s:do(a:motion, s:postbl[1])
 endfunction " }}}
 
 function! operator#inserttext#do_before(motion) abort " {{{
-  return s:do(a:motion, -1)
+  return s:do(a:motion, s:postbl[-1])
 endfunction " }}}
 
 function! operator#inserttext#do_replace(motion) abort " {{{
-  return s:do(a:motion, 0)
+  return s:do(a:motion, s:postbl[0])
 endfunction " }}}
 
 function! s:knormal(s) abort " {{{
@@ -202,13 +210,19 @@ function! s:funcs.block.gettext(reg) abort " {{{
   return getreg(a:reg)
 endfunction " }}}
 
-function! s:funcs.line.paste(str, pos, reg) abort " {{{
+function! s:funcs.line.paste_before(str, reg) abort " {{{
   call setreg(a:reg, a:str, 'V')
-  if a:pos < 0
-    call s:knormal('`["' . a:reg . 'P')
-  elseif a:pos > 0
-    call s:knormal('`]"' . a:reg . 'p')
-  elseif getpos("'[")[1] == 1 && getpos("']")[1] == line('$')
+  call s:knormal('`["' . a:reg . 'P')
+endfunction " }}}
+
+function! s:funcs.line.paste_after(str, reg) abort " {{{
+  call setreg(a:reg, a:str, 'V')
+  call s:knormal('`]"' . a:reg . 'p')
+endfunction " }}}
+
+function! s:funcs.line.paste_replace(str, reg) abort " {{{
+  call setreg(a:reg, a:str, 'V')
+  if getpos("'[")[1] == 1 && getpos("']")[1] == line('$')
     " vanish
     call s:knormal('`[V`]"_d"' . a:reg . 'PG"_ddggVG"' . a:reg . 'y')
   else
@@ -216,33 +230,40 @@ function! s:funcs.line.paste(str, pos, reg) abort " {{{
   endif
 endfunction " }}}
 
-function! s:funcs.char.paste(str, pos, reg) abort " {{{
+function! s:funcs.char.paste_before(str, reg) abort " {{{
   call setreg(a:reg, a:str, 'v')
-  if a:pos < 0
-    call s:knormal('`["' . a:reg . 'P')
-  elseif a:pos > 0
-    call s:knormal('`]"' . a:reg . 'p')
-  else
-    call s:knormal('`[v`]"' . a:reg . 'P')
-  endif
+  call s:knormal('`["' . a:reg . 'P')
 endfunction " }}}
 
-function! s:funcs.block.paste(str, pos, reg) abort " {{{
+function! s:funcs.char.paste_after(str, reg) abort " {{{
+  call setreg(a:reg, a:str, 'v')
+  call s:knormal('`]"' . a:reg . 'p')
+endfunction " }}}
+
+function! s:funcs.char.paste_replace(str, reg) abort " {{{
+  call setreg(a:reg, a:str, 'v')
+  call s:knormal('`[v`]"' . a:reg . 'P')
+endfunction " }}}
+
+function! s:funcs.block.paste_before(str, reg) abort " {{{
   let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
-  if a:pos != 0
-    let str = repeat(' ', p[0][2]-1) . a:str
-    call setreg(a:reg, str, 'V')
-    if a:pos < 0
-      call s:knormal('`["' . a:reg . 'P')
-    else
-      call s:knormal('`]"' . a:reg . 'p')
-    endif
-    return
-  else
-    " 最終行を置き換える
-    call setpos('.', [p[0][0], p[1][1], p[0][2], p[0][3]])
-    call s:knormal('R' . a:str)
-  endif
+  let str = repeat(' ', p[0][2]-1) . a:str
+  call setreg(a:reg, str, 'V')
+  call s:knormal('`["' . a:reg . 'P')
+endfunction " }}}
+
+function! s:funcs.block.paste_after(str, reg) abort " {{{
+  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
+  let str = repeat(' ', p[0][2]-1) . a:str
+  call setreg(a:reg, str, 'V')
+  call s:knormal('`]"' . a:reg . 'p')
+endfunction " }}}
+
+function! s:funcs.block.paste_replace(str, reg) abort " {{{
+  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
+  " 最終行を置き換える
+  call setpos('.', [p[0][0], p[1][1], p[0][2], p[0][3]])
+  call s:knormal('R' . a:str)
 endfunction " }}}
 
 function! s:do(motion, pos, ...) abort " {{{
@@ -262,7 +283,7 @@ function! s:do(motion, pos, ...) abort " {{{
       let str = s:__func__(src, a:motion, a:1)
     endif
     if str !=# ''
-      call fdic.paste(str, a:pos, reg)
+      call fdic[a:pos](str, reg)
     endif
   finally
     for r in [reg]
