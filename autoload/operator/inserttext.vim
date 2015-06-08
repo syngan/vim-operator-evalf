@@ -126,7 +126,8 @@ function! operator#inserttext#do(motion) abort " {{{
     if len(x) > 2 && !has_key(s:postbl, str[x[2]])
       continue
     endif
-    let F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
+
+    let l:F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
     try
       let s:__func__ = F
       if len(x) == 2
