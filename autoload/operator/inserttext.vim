@@ -195,12 +195,10 @@ function! s:knormal(s) abort " {{{
   execute 'keepjumps' 'silent' 'normal!' a:s
 endfunction " }}}
 
-let s:funcs = {'char' : {}, 'line': {}, 'block': {}}
-function! s:funcs.char.echo(str, ...) abort " {{{
+let s:funcs = {'char' : {}, 'line': {}, 'block': {}, 'common': {}}
+function! s:funcs.common.echo(str, ...) abort " {{{
   echo a:str
 endfunction " }}}
-let s:funcs.line.echo = s:funcs.char.echo
-let s:funcs.block.echo = s:funcs.char.echo
 
 function! s:funcs.char.gettext(reg) abort " {{{
   call s:knormal(printf('`[v`]"%sy', a:reg))
@@ -272,6 +270,17 @@ function! s:funcs.block.paste_replace(str, reg) abort " {{{
   call setpos('.', [p[0][0], p[1][1], p[0][2], p[0][3]])
   call s:knormal('R' . a:str)
 endfunction " }}}
+
+function! s:set_funcs() abort " {{{
+  for key in keys(s:funcs.common)
+    let s:funcs.char[key] = s:funcs.common[key]
+    let s:funcs.line[key] = s:funcs.common[key]
+    let s:funcs.block[key] = s:funcs.common[key]
+  endfor
+  unlet s:funcs.common
+endfunction " }}}
+
+call s:set_funcs()
 
 function! s:do(motion, pos, ...) abort " {{{
 
