@@ -3,17 +3,18 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
+" s:postbl {{{
 let s:postbl = {
 \ '!': 'echo',
 \ '+': 'paste_after',
-\  1 : 'paste_after',
 \ '-': 'paste_before',
-\ -1 : 'paste_before',
 \ '0': 'paste_replace',
-\}
+\} " }}}
 
 function! s:log(str) abort " {{{
-  silent! call vimconsole#log(a:str)
+  if get(g:, 'operator#inserttext#debug', 0)
+    silent! call vimconsole#log(a:str)
+  endif
 endfunction " }}}
 
 function! s:system(cmd) abort " {{{
@@ -181,11 +182,11 @@ call operator#user#define('inserttext-after',   'operator#inserttext#do_after')
 call operator#user#define('inserttext-replace', 'operator#inserttext#do_replace')
 
 function! operator#inserttext#do_after(motion) abort " {{{
-  return s:do(a:motion, s:postbl[1])
+  return s:do(a:motion, s:postbl['+'])
 endfunction " }}}
 
 function! operator#inserttext#do_before(motion) abort " {{{
-  return s:do(a:motion, s:postbl[-1])
+  return s:do(a:motion, s:postbl['-'])
 endfunction " }}}
 
 function! operator#inserttext#do_replace(motion) abort " {{{
