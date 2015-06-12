@@ -3,6 +3,10 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
+" {{{ vital
+let s:RD = vital#of('operator_inserttext').import('Data.RegDict')
+" }}}
+
 " s:postbl {{{
 let s:postbl = {
 \ '!': 'echo',
@@ -52,19 +56,25 @@ endfunction " }}}
 function! s:get(config, key) abort " {{{
   " return conf + pos
   let c = a:config
-  if has_key(c, a:key)
-    if type(c[a:key]) != type({}) || !has_key(c[a:key], 'func') ||
-\     type(c[a:key].func) != type(function('tr'))
-      call s:echo('invalid config[' . a:key . ']')
+  let ks = s:RD.keys(c, '^' . a:key)
+  if len(ks) == 1
+    let key = ks[0]
+    if type(c[key]) != type({}) || !has_key(c[key], 'func') ||
+\     type(c[key].func) != type(function('tr'))
+      call s:echo('invalid config[' . key . ']')
       return [0, 0]
     endif
-    return [c[a:key], s:postbl[get(c[a:key], 'pos', 0)]]
+    return [c[key], s:postbl[get(c[key], 'pos', 0)]]
   endif
 
   for x in [[0,1,-1], [len(a:key)-1,0,-2]]
     if has_key(s:postbl, a:key[x[0]])
-      if has_key(c, a:key[x[1] : x[2]])
-        return [c[a:key[x[1] : x[2]]], s:postbl[a:key[x[0]]]]
+      let ks = s:RD.keys(c, '^' . a:key[x[1] : x[2]])
+      if len(ks) == 1
+        let key = ks[0]
+        call s:log(c)
+        call s:log(key)
+        return [c[key], s:postbl[a:key[x[0]]]]
       endif
     endif
   endfor
@@ -72,8 +82,13 @@ function! s:get(config, key) abort " {{{
   return [-1, 0]
 endfunction " }}}
 
-function! operator#inserttext#complete(...) abort " {{{
-  return keys(g:operator#inserttext#config)
+function! operator#inserttext#complete(arglead, ...) abort " {{{
+  " arglead カーソル位置までの文字列
+  " cmdline 入力された文字列すべて.
+  if !exists('g:operator#inserttext#config') || type(g:operator#inserttext#config) != type({})
+    return []
+  endif
+  return s:RD.keys(g:operator#inserttext#config, '^' . a:arglead)
 endfunction " }}}
 
 function! s:input(...) abort " {{{
