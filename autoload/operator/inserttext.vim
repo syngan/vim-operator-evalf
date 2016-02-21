@@ -5,6 +5,7 @@ set cpo&vim
 
 " {{{ vital
 let s:RD = vital#of('operator_inserttext').import('Data.RegDict')
+let s:opmo = vital#of('operator_inserttext').import('Opmo')
 " }}}
 
 " s:postbl {{{
