@@ -3,7 +3,6 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
-
 function! s:_kname(key) abort " {{{
   return a:key
 endfunction " }}}
@@ -17,7 +16,7 @@ function! s:append(dict, key, value) abort " {{{
   let a:dict[key] = a:value
 endfunction " }}}
 
-function! s:remove(dict, key) abort " {{{
+function! s:_remove(dict, key) abort " {{{
   unlet a:dict[a:key]
   return 0
 endfunction " }}}
@@ -28,7 +27,7 @@ function! s:remove(dict, ...) abort " {{{
 " @return number of removed elements
   let keys = call(function('s:keys'), [a:dict] + a:000)
   let n = len(keys)
-  call map(keys, 's:remove(a:dict, v:val)')
+  call map(keys, 's:_remove(a:dict, v:val)')
   return n
 endfunction " }}}
 
