@@ -11,9 +11,9 @@ let s:opmo = vital#of('operator_inserttext').import('Opmo')
 " s:postbl {{{
 let s:postbl = {
 \ '!': 'echo',
-\ '+': 'paste_after',
-\ '-': 'paste_before',
-\ '0': 'paste_replace',
+\ '+': 'insert_after',
+\ '-': 'insert_before',
+\ '0': 'replace',
 \} " }}}
 
 function! s:log(str) abort " {{{
@@ -213,86 +213,11 @@ function! s:knormal(s) abort " {{{
   execute 'keepjumps' 'silent' 'normal!' a:s
 endfunction " }}}
 
-let s:funcs = {'char' : {}, 'line': {}, 'block': {}, 'common': {}}
-function! s:funcs.common.echo(str, ...) abort " {{{
+function! s:opmo.echo(motion, str, ...) abort " {{{
   echo a:str
 endfunction " }}}
 
-function! s:funcs.line.paste_before(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'V')
-  call s:knormal('`["' . a:reg . 'P')
-endfunction " }}}
-
-function! s:funcs.line.paste_after(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'V')
-  call s:knormal('`]"' . a:reg . 'p')
-endfunction " }}}
-
-function! s:funcs.line.paste_replace(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'V')
-  if getpos("'[")[1] == 1 && getpos("']")[1] == line('$')
-    " vanish
-    call s:knormal('`[V`]"_d"' . a:reg . 'PG"_ddggVG"' . a:reg . 'y')
-  else
-    call s:knormal('`[V`]"_d"' . a:reg . 'p')
-  endif
-endfunction " }}}
-
-function! s:funcs.char.paste_before(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'v')
-  call s:knormal('`["' . a:reg . 'P')
-endfunction " }}}
-
-function! s:funcs.char.paste_after(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'v')
-  call s:knormal('`]"' . a:reg . 'p')
-endfunction " }}}
-
-function! s:funcs.char.paste_replace(str, reg) abort " {{{
-  call setreg(a:reg, a:str, 'v')
-  call s:knormal('`[v`]"' . a:reg . 'P')
-endfunction " }}}
-
-function! s:funcs.block.paste_before(str, reg) abort " {{{
-  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
-  let str = repeat(' ', p[0][2]-1) . a:str
-  call setreg(a:reg, str, 'V')
-  call s:knormal('`["' . a:reg . 'P')
-endfunction " }}}
-
-function! s:funcs.block.paste_after(str, reg) abort " {{{
-  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
-  let str = repeat(' ', p[0][2]-1) . a:str
-  call setreg(a:reg, str, 'V')
-  call s:knormal('`]"' . a:reg . 'p')
-endfunction " }}}
-
-function! s:funcs.block.paste_replace(str, reg) abort " {{{
-  let p = [getpos("'["), getpos("']"), getregtype(a:reg)]
-  " 最終行を置き換える
-  call setpos('.', [p[0][0], p[1][1], p[0][2], p[0][3]])
-  call s:knormal('R' . a:str)
-endfunction " }}}
-
-function! s:set_funcs() abort " {{{
-  for key in keys(s:funcs.common)
-    let s:funcs.char[key] = s:funcs.common[key]
-    let s:funcs.line[key] = s:funcs.common[key]
-    let s:funcs.block[key] = s:funcs.common[key]
-  endfor
-  unlet s:funcs.common
-endfunction " }}}
-
-call s:set_funcs()
-
 function! s:do(motion, pos, ...) abort " {{{
-
-  let fdic = s:funcs[a:motion]
-  let reg = '"'
-  let regdic = {}
-  for r in [reg]
-    let regdic[r] = [getreg(r), getregtype(r)]
-  endfor
 
   try
     let src = s:opmo.gettext(a:motion)
@@ -302,12 +227,9 @@ function! s:do(motion, pos, ...) abort " {{{
       let str = s:__func__(src, a:motion, a:1)
     endif
     if str !=# ''
-      call fdic[a:pos](str, reg)
+      call s:opmo[a:pos](a:motion, str)
     endif
   finally
-    for r in [reg]
-      call setreg(r, regdic[r][0], regdic[r][1])
-    endfor
   endtry
 endfunction " }}}
 
