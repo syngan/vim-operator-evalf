@@ -217,21 +217,6 @@ function! s:funcs.common.echo(str, ...) abort " {{{
   echo a:str
 endfunction " }}}
 
-function! s:funcs.char.gettext(reg) abort " {{{
-  call s:knormal(printf('`[v`]"%sy', a:reg))
-  return getreg(a:reg)
-endfunction " }}}
-
-function! s:funcs.line.gettext(reg) abort " {{{
-  call s:knormal(printf('`[V`]"%sy', a:reg))
-  return getreg(a:reg)
-endfunction " }}}
-
-function! s:funcs.block.gettext(reg) abort " {{{
-  call s:knormal(printf('gv"%sy', a:reg))
-  return getreg(a:reg)
-endfunction " }}}
-
 function! s:funcs.line.paste_before(str, reg) abort " {{{
   call setreg(a:reg, a:str, 'V')
   call s:knormal('`["' . a:reg . 'P')
@@ -309,7 +294,7 @@ function! s:do(motion, pos, ...) abort " {{{
   endfor
 
   try
-    let src = fdic.gettext(reg)
+    let src = s:opmo.gettext(a:motion)
     if a:0 == 0
       let str = s:__func__(src, a:motion)
     else
