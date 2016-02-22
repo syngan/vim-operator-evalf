@@ -209,13 +209,11 @@ function! operator#inserttext#do_replace(motion) abort " {{{
   return s:do(a:motion, s:postbl[0])
 endfunction " }}}
 
-function! s:knormal(s) abort " {{{
-  execute 'keepjumps' 'silent' 'normal!' a:s
-endfunction " }}}
-
+" @vimlint(EVL103, 1, a:motion)
 function! s:opmo.echo(motion, str, ...) abort " {{{
   echo a:str
 endfunction " }}}
+" @vimlint(EVL103, 0, a:motion)
 
 function! s:do(motion, pos, ...) abort " {{{
 
@@ -227,7 +225,7 @@ function! s:do(motion, pos, ...) abort " {{{
       let str = s:__func__(src, a:motion, a:1)
     endif
     if str !=# ''
-      call s:opmo[a:pos](a:motion, str)
+      call s:opmo[a:pos](a:motion, str, 'n')
     endif
   finally
   endtry

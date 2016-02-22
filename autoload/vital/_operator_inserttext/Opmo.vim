@@ -3,6 +3,15 @@ scriptencoding utf-8
 let s:save_cpo = &cpo
 set cpo&vim
 
+" flag: motion: detail (function) [conflict]
+"  n: line : 改行するか. (wrap)
+"  e: block: 各行処理 (wrap) [E]
+"  E: block: 全体をまとめる (wrap) [e]
+"  t: block: 上詰め (replace) [b]
+"  b: block: 下詰め (replace) [t]
+"  ?: block: あふれたらどうする? (replace)
+
+
 let s:_funcs = {'char' : {'v':'v'}, 'line': {'v':'V'}, 'block': {'v':"\<C-v>"}}
 
 function! s:_knormal(s) abort " {{{
@@ -52,7 +61,7 @@ function! s:gettext(motion) abort " {{{
 endfunction " }}}
 "}}}
 
-" highlight(motion, hlgroup) {{{
+" highlight(motion, hlgroup, priority...) {{{
 function! s:highlight(motion, hlgroup) abort " {{{
   let fdic = s:_funcs[a:motion]
   let [reg, regdic] = s:_reg_save()
@@ -92,14 +101,14 @@ function! s:_funcs.block.highlight(begin, end, hlgroup) abort " {{{
 endfunction " }}}
 "}}}
 
-" replace(motion, str, pos) {{{
+" replace(motion, str, flags) {{{
 function! s:replace(motion, str, ...) abort " {{{
   let fdic = s:_funcs[a:motion]
   let [reg, regdic] = s:_reg_save()
 
   try
     call setreg(reg, a:str, fdic.v)
-    return fdic.replace(reg, get(a:, 1, 0))
+    return fdic.replace(reg, get(a:000, 0, ''))
   finally
     call s:_reg_restore(regdic)
   endtry
@@ -141,7 +150,7 @@ function! s:wrap(motion, left, right, ...) abort " {{{
   let [reg, regdic] = s:_reg_save()
 
   try
-    return fdic.wrap(a:left, a:right, reg, get(a:000, 0, 0))
+    return fdic.wrap(a:left, a:right, reg, get(a:000, 0, ''))
   finally
     call s:_reg_restore(regdic)
   endtry
@@ -155,15 +164,27 @@ function! s:_funcs.char.wrap(left, right, reg, ...) abort " {{{
   call s:_knormal('`<"' . a:reg . 'P')
 endfunction " }}}
 
-function! s:_funcs.line.wrap(left, right, ...) abort " {{{
-  " @TODO
-  call s:_knormal(printf("%dGA%s\<Esc>%dGgI%s\<Esc>",
-        \ getpos("']")[1], a:right, getpos("'[")[1], a:left))
+function! s:_funcs.line.wrap(left, right, reg, flags) abort " {{{
+  let v = (a:flags =~# 'n') ? 'V' : 'v'
+
+  call s:_knormal("`[V`]\<Esc>")
+  if a:right !=# ''
+    call setreg(a:reg, a:right, v)
+    call s:_knormal('`>"' . a:reg . 'p')
+  endif
+  if a:left !=# ''
+    call setreg(a:reg, a:left, v)
+    call s:_knormal('`<"' . a:reg . 'P')
+  endif
+" call s:_knormal(printf("%dGA%s\<Esc>%dGgI%s\<Esc>",
+"       \ getpos("']")[1], a:right, getpos("'[")[1], a:left))
 endfunction " }}}
 
-function! s:_funcs.block.wrap(left, right, reg, pos) abort " {{{
+function! s:_funcs.block.wrap(left, right, reg, flags) abort " {{{
   " 各行, 最初と最後.
-  if a:pos < 0
+  if a:flags =~# 'E'
+    return s:_funcs.char.wrap(a:left, a:right, a:reg)
+  else
     " 各行について char する.
     " left, right が改行文字をもつと壊れる
     call s:_knormal(printf('gv"%sy', a:reg))
@@ -184,8 +205,6 @@ function! s:_funcs.block.wrap(left, right, reg, pos) abort " {{{
         call s:_knormal('"' . a:reg . 'P')
       endif
     endfor
-  else
-    return s:_funcs.char.wrap(a:left, a:right, a:reg)
   endif
 endfunction " }}}
 " }}}
