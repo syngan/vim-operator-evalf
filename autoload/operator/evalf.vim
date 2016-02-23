@@ -4,8 +4,8 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 " {{{ vital
-let s:RD = vital#of('operator_inserttext').import('Data.RegDict')
-let s:opmo = vital#of('operator_inserttext').import('Opmo')
+let s:RD = vital#of('operator_evalf').import('Data.RegDict')
+let s:opmo = vital#of('operator_evalf').import('Opmo')
 " }}}
 
 " s:postbl {{{
@@ -17,7 +17,7 @@ let s:postbl = {
 \} " }}}
 
 function! s:log(str) abort " {{{
-  if get(g:, 'operator#inserttext#debug', 0)
+  if get(g:, 'operator#evalf#debug', 0)
     silent! call vimconsole#log(a:str)
   endif
 endfunction " }}}
@@ -30,7 +30,7 @@ function! s:system(cmd) abort " {{{
   return [val, err]
 endfunction " }}}
 
-function! operator#inserttext#system(cmd) abort " {{{
+function! operator#evalf#system(cmd) abort " {{{
   let [val, err] = s:system(a:cmd)
   if err
     return ''
@@ -40,18 +40,18 @@ function! operator#inserttext#system(cmd) abort " {{{
 endfunction " }}}
 
 function! s:echo(msg) abort " {{{
-  redraw | echo 'inserttext: ' . a:msg
+  redraw | echo 'evalf: ' . a:msg
 endfunction " }}}
 
 function! s:echoerr(msg) abort " {{{
   echohl ErrorMsg
-  echomsg 'inserttext: ' . a:msg
+  echomsg 'evalf: ' . a:msg
   echohl None
 endfunction " }}}
 
 function! s:is_valid_config() abort " {{{
-  return exists('g:operator#inserttext#config') &&
-\   type(g:operator#inserttext#config) == type({})
+  return exists('g:operator#evalf#config') &&
+\   type(g:operator#evalf#config) == type({})
 endfunction " }}}
 
 function! s:get(config, key) abort " {{{
@@ -83,17 +83,17 @@ function! s:get(config, key) abort " {{{
   return [-1, 0]
 endfunction " }}}
 
-function! operator#inserttext#complete(arglead, ...) abort " {{{
+function! operator#evalf#complete(arglead, ...) abort " {{{
   " arglead カーソル位置までの文字列
   " cmdline 入力された文字列すべて.
-  if !exists('g:operator#inserttext#config') || type(g:operator#inserttext#config) != type({})
+  if !exists('g:operator#evalf#config') || type(g:operator#evalf#config) != type({})
     return []
   endif
-  return s:RD.keys(g:operator#inserttext#config, '^' . a:arglead)
+  return s:RD.keys(g:operator#evalf#config, '^' . a:arglead)
 endfunction " }}}
 
 function! s:input(...) abort " {{{
-  return input('inserttext: ', '', 'customlist,operator#inserttext#complete')
+  return input('evalf: ', '', 'customlist,operator#evalf#complete')
 endfunction " }}}
 
 function! s:quickrun(str, ...) abort " {{{
@@ -102,24 +102,24 @@ function! s:quickrun(str, ...) abort " {{{
   call quickrun#run({
         \ 'outputter': 'variable',
         \ 'srcfile': f,
-        \ 'outputter/variable/name': 'g:operator#inserttext#quickrun_ret',
+        \ 'outputter/variable/name': 'g:operator#evalf#quickrun_ret',
         \ 'type': s:__func__quickrun,
         \ 'runner': 'system'
         \ })
   " 任意の runner で同期処理にする方法がよくわからない.
   " ローカル変数は利用できるんか?
   call delete(f)
-  let ret = get(g:, 'operator#inserttext#quickrun_ret', '')
-  unlet! g:operator#inserttext#quickrun_ret
+  let ret = get(g:, 'operator#evalf#quickrun_ret', '')
+  unlet! g:operator#evalf#quickrun_ret
   if ret ==# s:__func__quickrun . ': Command not found.'
     throw 'E117'
   endif
   return ret
 endfunction " }}}
 
-:highlight inserttext_hl_group ctermfg=Blue ctermbg=LightRed
-function! operator#inserttext#do(motion) abort " {{{
-  let mids = s:opmo.highlight(a:motion, 'inserttext_hl_group')
+:highlight evalf_hl_group ctermfg=Blue ctermbg=LightRed
+function! operator#evalf#do(motion) abort " {{{
+  let mids = s:opmo.highlight(a:motion, 'evalf_hl_group')
   redraw
   let str = s:input(a:motion)
   call s:opmo.unhighlight(mids)
@@ -131,7 +131,7 @@ function! operator#inserttext#do(motion) abort " {{{
   " user definition {{{
   "------------------------------------------------
   if s:is_valid_config()
-    let [c, p] = s:get(g:operator#inserttext#config, str)
+    let [c, p] = s:get(g:operator#evalf#config, str)
     if c is 0
       call s:echo('invalid config')
       return
@@ -141,14 +141,14 @@ function! operator#inserttext#do(motion) abort " {{{
     endif
   endif " }}}
 
-  " operator-inserttext functions {{{
+  " operator-evalf functions {{{
   "------------------------------------------------
   for x in [[1,-1,0],[0,-2,len(str)-1],[0,-1]]
     if len(x) > 2 && !has_key(s:postbl, str[x[2]])
       continue
     endif
 
-    let l:F = function('operator#inserttext#' . str[x[0] : x[1]] . '#eval')
+    let l:F = function('operator#evalf#' . str[x[0] : x[1]] . '#eval')
     try
       let s:__func__ = F
       if len(x) == 2
@@ -186,30 +186,30 @@ function! operator#inserttext#do(motion) abort " {{{
   call s:echoerr('not found: ' . str)
 endfunction " }}}
 
-function! operator#inserttext#mapexpr(func, pos) abort " {{{
+function! operator#evalf#mapexpr(func, pos) abort " {{{
   let s:__func__ = a:func
   if a:pos > 0
-    return "\<Plug>(operator-inserttext-after)"
+    return "\<Plug>(operator-evalf-after)"
   elseif a:pos < 0
-    return "\<Plug>(operator-inserttext-before)"
+    return "\<Plug>(operator-evalf-before)"
   else
-    return "\<Plug>(operator-inserttext-replace)"
+    return "\<Plug>(operator-evalf-replace)"
   endif
 endfunction " }}}
 
-call operator#user#define('inserttext-before',  'operator#inserttext#do_before')
-call operator#user#define('inserttext-after',   'operator#inserttext#do_after')
-call operator#user#define('inserttext-replace', 'operator#inserttext#do_replace')
+call operator#user#define('evalf-before',  'operator#evalf#do_before')
+call operator#user#define('evalf-after',   'operator#evalf#do_after')
+call operator#user#define('evalf-replace', 'operator#evalf#do_replace')
 
-function! operator#inserttext#do_after(motion) abort " {{{
+function! operator#evalf#do_after(motion) abort " {{{
   return s:do(a:motion, s:postbl['+'])
 endfunction " }}}
 
-function! operator#inserttext#do_before(motion) abort " {{{
+function! operator#evalf#do_before(motion) abort " {{{
   return s:do(a:motion, s:postbl['-'])
 endfunction " }}}
 
-function! operator#inserttext#do_replace(motion) abort " {{{
+function! operator#evalf#do_replace(motion) abort " {{{
   return s:do(a:motion, s:postbl[0])
 endfunction " }}}
 
