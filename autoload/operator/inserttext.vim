@@ -117,8 +117,12 @@ function! s:quickrun(str, ...) abort " {{{
   return ret
 endfunction " }}}
 
+:highlight inserttext_hl_group ctermfg=Blue ctermbg=LightRed
 function! operator#inserttext#do(motion) abort " {{{
+  let mids = s:opmo.highlight(a:motion, 'inserttext_hl_group')
+  redraw
   let str = s:input(a:motion)
+  call s:opmo.unhighlight(mids)
   if str ==# ''
     call s:echo('canceled')
     return
@@ -225,7 +229,7 @@ function! s:do(motion, pos, ...) abort " {{{
       let str = s:__func__(src, a:motion, a:1)
     endif
     if str !=# ''
-      call s:opmo[a:pos](a:motion, str, 'n')
+      call s:opmo[a:pos](a:motion, str, 'nv')
     endif
   finally
   endtry
