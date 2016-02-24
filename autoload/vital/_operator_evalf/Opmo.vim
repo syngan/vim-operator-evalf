@@ -24,14 +24,17 @@ function! s:_reg_save() abort " {{{
   for r in [reg]
     let regdic[r] = [getreg(r), getregtype(r)]
   endfor
+  let sel_save = &selection
+  let &selection = "inclusive"
 
-  return [reg, regdic]
+  return [reg, regdic, sel_save]
 endfunction " }}}
 
 function! s:_reg_restore(regdic) abort " {{{
-  for [reg, val] in items(a:regdic)
+  for [reg, val] in items(a:regdic[0])
     call setreg(reg, val[0], val[1])
   endfor
+  let &selection = a:regdic[1]
 endfunction " }}}
 
 function! s:_block_width(reg) abort " {{{
@@ -56,7 +59,7 @@ endfunction " }}}
 
 function! s:gettext(motion) abort " {{{
   let fdic = s:_funcs[a:motion]
-  let [reg, regdic] = s:_reg_save()
+  let [reg; regdic] = s:_reg_save()
   try
     return fdic.gettext(reg)
   finally
@@ -68,7 +71,7 @@ endfunction " }}}
 " highlight(motion, hlgroup, priority...) {{{
 function! s:highlight(motion, hlgroup, ...) abort " {{{
   let fdic = s:_funcs[a:motion]
-  let [reg, regdic] = s:_reg_save()
+  let [reg; regdic] = s:_reg_save()
   let priority = get(a:, '1', 10)
 
   try
@@ -116,7 +119,7 @@ endfunction " }}}
 " replace(motion, str, flags) {{{
 function! s:replace(motion, str, ...) abort " {{{
   let fdic = s:_funcs[a:motion]
-  let [reg, regdic] = s:_reg_save()
+  let [reg; regdic] = s:_reg_save()
 
   try
     return fdic.replace(a:str, reg, get(a:000, 0, ''))
@@ -129,7 +132,18 @@ function! s:_funcs.char.replace(str, reg, ...) abort " {{{
   call setreg(a:reg, a:str, 'v')
   let end = getpos("']")
   let eline = getline(end[1])
-  let p = (len(eline) == end[2]) ? 'p' : 'P'
+  if len(eline) > end[2]
+    let p = 'P'
+  else
+    let p = 'p'
+
+    if len(eline) < end[2]
+      " 手元では起きないけど, travis で死んだ.
+      let end[2] = len(eline)
+      call setpos("']", end)
+    endif
+  endif
+
   call s:_knormal(printf('`[v`]"_d"%s%s', a:reg, p))
 endfunction " }}}
 
@@ -217,7 +231,7 @@ endfunction " }}}
 " wrap {{{
 function! s:wrap(motion, left, right, ...) abort " {{{
   let fdic = s:_funcs[a:motion]
-  let [reg, regdic] = s:_reg_save()
+  let [reg; regdic] = s:_reg_save()
 
   try
     return fdic.wrap(a:left, a:right, reg, get(a:000, 0, ''))
