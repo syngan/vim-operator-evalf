@@ -25,7 +25,7 @@ describe 'insert after'
   before
     new
     call s:paste_code()
-    map <expr> sa1 operator#inserttext#mapexpr(function("g:P1"), +1)
+    map <expr> sa1 operator#evalf#mapexpr(function("g:P1"), +1)
   end
 
   after
