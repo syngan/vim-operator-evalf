@@ -1,7 +1,7 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-function! operator#inserttext#add#eval(str, ...)
+function! operator#evalf#add#eval(str, ...)
   let s = a:str
   let ret = 0.0
   let pat = '[-+]\=[0-9]\+\(\.[0-9]\+\)\=\(e[-+][0-9]\+\)\='

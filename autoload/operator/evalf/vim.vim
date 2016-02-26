@@ -1,7 +1,7 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-function! operator#inserttext#vim#eval(str, ...) abort
+function! operator#evalf#vim#eval(str, ...) abort
   if a:str[len(a:str)-1] =~ '\n'
     return eval(a:str[0: -2])
   else
