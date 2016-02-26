@@ -3,7 +3,7 @@ set cpo&vim
 
 function! operator#evalf#add#eval(str, ...)
   let s = a:str
-  let ret = 0.0
+  let ret = 0
   let pat = '[-+]\=[0-9]\+\(\.[0-9]\+\)\=\(e[-+][0-9]\+\)\='
   let idx = 0
   while 1
@@ -12,7 +12,7 @@ function! operator#evalf#add#eval(str, ...)
       return string(ret)
     endif
     let val = matchstr(s, pat, idx)
-    let ret += str2float(val)
+    let ret += (val =~# '^[+-]\=[0-9]\+$') ? str2nr(val) : str2float(val)
 
     let idx += len(val)
   endwhile
