@@ -1,0 +1,3 @@
+call themis#option('runtimepath', [
+			\ $HOME . '/.vim/bundle/vim-operator-user',
+			\ '/tmp/vim-operator-user'])
